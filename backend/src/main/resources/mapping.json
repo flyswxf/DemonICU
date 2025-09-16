@@ -1,0 +1,36 @@
+{
+  "labels": {
+    "cardiogenic_shock_high": {
+      "recommended": [
+        {"measure":"紧急升压支持（去甲肾上腺素优先）","reason":"高风险休克：需快速恢复灌注压力"},
+        {"measure":"完善血流动力学监测（动脉置管/有创血压）","reason":"实时评估MAP与用药反应"},
+        {"measure":"床旁超声/心电图，评估心功能与机械并发症","reason":"明确病因指导治疗"}
+      ],
+      "similar_cases": [
+        {"measure":"去甲肾上腺素滴定","default_frequency":0.6},
+        {"measure":"正性肌力（多巴酚丁胺/米力农）","default_frequency":0.25}
+      ]
+    },
+    "cardiogenic_shock_moderate": {
+      "recommended": [
+        {"measure":"升压药滴定维持MAP≥65 mmHg","reason":"灌注保护"},
+        {"measure":"动态监测乳酸与尿量","reason":"判断组织灌注变化"},
+        {"measure":"心超评估泵功能","reason":"决定是否需正性肌力药物"}
+      ],
+      "similar_cases": [
+        {"measure":"去甲肾上腺素滴定","default_frequency":0.45},
+        {"measure":"IABP 评估/使用","default_frequency":0.15}
+      ]
+    },
+    "cardiogenic_shock_low": {
+      "recommended": [
+        {"measure":"密切观察+基础监测","reason":"当前风险较低"},
+        {"measure":"优化液体管理与镇痛/镇静","reason":"避免诱发因素"}
+      ],
+      "similar_cases": [
+        {"measure":"观察与支持治疗","default_frequency":0.5},
+        {"measure":"必要时复查乳酸与心超","default_frequency":0.2}
+      ]
+    }
+  }
+}

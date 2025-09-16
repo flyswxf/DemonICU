@@ -1,0 +1,6 @@
+{
+  "id": "demo-patient-001",
+  "vitals": { "MAP": 60, "HR": 120, "CI": 1.8, "PAWP": 20 },
+  "labs": { "lactate": 3.2, "BNP": 450, "EF": 30 },
+  "history": { "MI": true }
+}

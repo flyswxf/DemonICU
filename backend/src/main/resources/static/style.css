@@ -1,0 +1,23 @@
+/* minimal styles copied from frontend/style.css for demo */
+body { font-family: Arial, "Microsoft Yahei", sans-serif; margin:0; background:#f7f8fb; color:#222; }
+.app-header { background:#2b5bfb; color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+.brand { font-weight:700; }
+.subtitle { opacity:0.9; font-size:0.9rem; }
+.card { background:#fff; padding:16px; margin:20px auto; max-width:980px; border-radius:8px; box-shadow:0 6px 18px rgba(20,30,60,0.06); }
+.hidden { display:none; }
+.grid { display:flex; gap:12px; }
+.panel { flex:1; }
+.list { list-style:none; padding:0; margin:0; }
+.title { font-weight:600; }
+.desc { color:#444; margin-top:8px; }
+.bars { display:flex; flex-direction:column; gap:8px; }
+.bar .name { font-size:0.95rem; margin-bottom:6px; }
+.track { background:#eee; height:12px; border-radius:6px; overflow:hidden; }
+.fill { background:#2b5bfb; height:12px; width:0; transition:width 400ms ease; }
+.btn { padding:8px 12px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer; }
+.btn.primary { background:#2b5bfb; color:#fff; border-color:transparent; }
+.input { width:100%; padding:8px; }
+.gauge { width:180px; height:180px; border-radius:50%; background:conic-gradient(#2b5bfb var(--val,120deg), #eee 0deg); display:flex; align-items:center; justify-content:center; margin:12px auto; }
+.gauge-center { background:#fff; width:110px; height:110px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.prob-value { font-weight:700; font-size:1.2rem; }
+.footer { text-align:center; padding:12px; color:#888; }

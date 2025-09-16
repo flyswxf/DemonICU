@@ -1,0 +1,5 @@
+{
+  "history": { "MI": true },
+  "vitals": { "MAP": 58, "HR": 118, "CI": 2.0, "PAWP": 22 },
+  "labs": { "lactate": 3.2, "EF": 30, "BNP": 1200, "urine_output_6h": 0.3 }
+}
