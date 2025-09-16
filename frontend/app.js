@@ -14,6 +14,7 @@ const gauge = $('#gauge');
 const probValue = $('#prob-value');
 const recommendList = $('#recommend-list');
 const similarBars = $('#similar-bars');
+const labelsWrap = $('#labels-wrap');
 const augmentText = $('#augment-text');
 const augmentBtn = $('#augment-btn');
 
@@ -39,6 +40,17 @@ function renderRecommendations(items) {
     r.textContent = it.reason || '';
     li.appendChild(t); li.appendChild(r);
     recommendList.appendChild(li);
+  });
+}
+
+function renderLabels(labels) {
+  if (!labels || labels.length === 0) { labelsWrap.textContent = '无'; return; }
+  labelsWrap.innerHTML = '';
+  labels.forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'desc';
+    d.textContent = `${l.id} (${Math.round(l.score*100)}%)`;
+    labelsWrap.appendChild(d);
   });
 }
 
@@ -121,6 +133,8 @@ function init() {
       setGauge(data.probability);
       renderRecommendations(data.recommended);
       renderSimilarBars(data.similar_cases);
+  // 渲染模型标签（如果后端返回）
+  renderLabels(data.labels);
       toggleSections(true);
     } catch (err) {
       alert(err.message || '推理失败');
@@ -138,6 +152,7 @@ function init() {
       setGauge(data.probability);
       renderRecommendations(data.recommended);
       renderSimilarBars(data.similar_cases);
+  renderLabels(data.labels);
       augmentText.value = '';
     } catch (err) {
       alert(err.message || '更新失败');
