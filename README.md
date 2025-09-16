@@ -8,43 +8,60 @@
 ```
 demonstrate/
   ├── backend/
-  │   ├── main.py              # FastAPI 后端
-  │   └── requirements.txt     # 依赖
+  │   ├── src/
+  │   │   └── main/
+  │   │       └── java/
+  │   │           └── com/
+  │   │               └── example/
+  │   │                   └── backendjava/
+  │   │                       ├── BackendJavaApplication.java      # Spring Boot 主入口
+  │   │                       ├── controller/
+  │   │                       │   └── InferController.java         # REST 控制器
+  │   │                       ├── service/
+  │   │                       │   └── InferService.java            # 业务逻辑
+  │   │                       │   └── model/
+  │   │                       │       ├── ModelClient.java         # 模型接口
+  │   │                       │       └── MockModelClient.java     # 演示用 Mock 实现
+  │   ├── src/main/resources/
+  │   │   ├── application.properties      # 配置文件
+  │   │   └── mapping.json                # 标签映射
+  │   ├── pom.xml                         # Maven 构建文件
   └── frontend/
-      ├── index.html           # 前端入口
-      ├── style.css            # 样式
-      └── app.js               # 前端逻辑
+      ├── index.html                      # 前端入口
+      ├── style.css                       # 样式
+      └── app.js                          # 前端逻辑
 ```
 
 ## 后端启动
-1) 创建并激活虚拟环境（可选）：
-```
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+
+先到后端目录：（根据实际路径修改）
+```powershell
+cd C:\Users\yeyuc\Desktop\大创\demonstrate\backend
 ```
 
-2) 安装依赖：
-```
-pip install -r demonstrate/backend/requirements.txt
+构建jar并运行
+```powershell
+mvn -DskipTests package
+& java -jar .\target\backend-java-0.0.1-SNAPSHOT.jar --server.port=8000
 ```
 
-3) 启动服务：
+后端默认地址： http://localhost:8000
+
+启动后确认：
+```powershell
+Invoke-RestMethod http://localhost:8000/api/health
+# 期望输出: {"status":"ok"}
 ```
-python -m uvicorn demonstrate.backend.main:app --host 0.0.0.0 --port 8000
-```
-启动成功后，健康检查地址：http://localhost:8000/api/health
 
 ## 前端启动
-方式A（推荐）：使用 Python 简单静态服务器
-```
-cd demonstrate/frontend
+
+前端只是静态文件，启动方式如下：（根据实际路径修改）
+```powershell
+cd C:\Users\yeyuc\Desktop\大创\demonstrate\frontend
 python -m http.server 5173
+# 在浏览器打开: http://localhost:5173
 ```
-然后在浏览器打开：http://localhost:5173/
 
-方式B：直接双击打开 index.html（可能会有跨域限制，可用方式A避免）
-
-前端默认请求后端地址为 http://localhost:8000（见 frontend/app.js 中 API_BASE）。如需修改端口或部署到其他机器，请调整该常量。
 
 ## 接口说明
 - POST /api/infer/upload
@@ -60,9 +77,10 @@ python -m http.server 5173
 ## 样例 JSON 格式（可参考）
 ```
 {
-  "history": { "MI": true },
-  "vitals": { "MAP": 58, "HR": 118, "CI": 2.0, "PAWP": 22 },
-  "labs": { "lactate": 3.2, "EF": 30, "BNP": 1200, "urine_output_6h": 0.3 }
+  "id": "demo-patient-001",
+  "vitals": { "MAP": 60, "HR": 120, "CI": 1.8, "PAWP": 20 },
+  "labs": { "lactate": 3.2, "BNP": 450, "EF": 30 },
+  "history": { "MI": true }
 }
 ```
 
