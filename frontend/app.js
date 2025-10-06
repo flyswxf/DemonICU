@@ -16,6 +16,8 @@ const recommendList = $('#recommend-list');
 const similarBars = $('#similar-bars');
 const augmentText = $('#augment-text');
 const augmentBtn = $('#augment-btn');
+const loadingOverlay = $('#loading-overlay');
+const loadingText = $('#loading-text');
 
 let selectedFile = null;
 let sessionId = null;
@@ -75,6 +77,15 @@ function setLoading(btn, loading) {
   btn.textContent = loading ? '处理中...' : (btn === uploadBtn ? '上传并推理' : '提交补充信息并更新');
 }
 
+function showLoading(msg = '模型运行中，请稍候…') {
+  if (loadingText) loadingText.textContent = msg;
+  if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+}
+
+function hideLoading() {
+  if (loadingOverlay) loadingOverlay.classList.add('hidden');
+}
+
 async function inferByUpload(file) {
   const fd = new FormData();
   fd.append('file', file);
@@ -116,6 +127,7 @@ function init() {
     if (!selectedFile) return;
     try {
       setLoading(uploadBtn, true);
+      showLoading('正在运行模型推理…');
       const data = await inferByUpload(selectedFile);
       sessionId = data.session_id;
       setGauge(data.probability);
@@ -126,6 +138,7 @@ function init() {
       alert(err.message || '推理失败');
     } finally {
       setLoading(uploadBtn, false);
+      hideLoading();
     }
   });
 
@@ -134,6 +147,7 @@ function init() {
     if (!text) { augmentText.focus(); return; }
     try {
       setLoading(augmentBtn, true);
+      showLoading('正在根据补充信息重新计算…');
       const data = await augment(text);
       setGauge(data.probability);
       renderRecommendations(data.recommended);
@@ -143,6 +157,7 @@ function init() {
       alert(err.message || '更新失败');
     } finally {
       setLoading(augmentBtn, false);
+      hideLoading();
     }
   });
 

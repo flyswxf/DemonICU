@@ -72,6 +72,14 @@
 
   <footer class="app-footer">本演示仅用于科研展示，非医疗用途</footer>
 
+  <!-- 加载覆盖层与圆形进度条 -->
+  <div id="loading-overlay" class="overlay hidden" aria-live="assertive" aria-busy="true">
+    <div class="overlay-inner">
+      <div class="spinner" role="status" aria-label="模型运行中"></div>
+      <div id="loading-text" class="loading-text">模型运行中，请稍候…</div>
+    </div>
+  </div>
+
   <script src="./app.js"></script>
 </body>
 </html>

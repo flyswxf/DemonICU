@@ -15,7 +15,7 @@ demonstrate/
       ├── style.css            # 样式
       └── app.js               # 前端逻辑
 ```
-
+# 后端和前端都需要启动
 ## 后端启动
 1) 创建并激活虚拟环境（可选）：
 ```
@@ -30,7 +30,7 @@ pip install -r demonstrate/backend/requirements.txt
 
 3) 启动服务：
 ```
-python -m uvicorn demonstrate.backend.main:app --host 0.0.0.0 --port 8000
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 启动成功后，健康检查地址：http://localhost:8000/api/health
 

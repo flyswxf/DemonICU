@@ -1,0 +1,37 @@
+{
+  "patient_id": 1006,
+  "demographics": {
+    "age": 68,
+    "sex": "M"
+  },
+  "admission": {
+    "icu": "CCU",
+    "admit_time": "2025-10-01T08:15:00Z"
+  },
+  "vitals": {
+    "HR": 112,
+    "SBP": 84,
+    "DBP": 50,
+    "MAP": 61,
+    "RR": 24,
+    "SpO2": 93,
+    "Temp": 36.8,
+    "PAWP": 20
+  },
+  "labs": {
+    "Lactate": 3.6,
+    "BNP": 980,
+    "Creatinine": 1.8,
+    "Troponin": 0.06
+  },
+  "medications": [
+    { "name": "furosemide", "dose": "20 mg", "route": "IV" },
+    { "name": "aspirin", "dose": "100 mg", "route": "PO" }
+  ],
+  "comorbidities": [
+    "ischemic heart disease",
+    "hypertension"
+  ],
+  "notes": "Patient with hypotension and signs of congestion.",
+  "timestamp": "2025-10-06T12:00:00Z"
+}
