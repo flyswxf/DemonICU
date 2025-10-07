@@ -7,13 +7,22 @@
 ## 目录结构
 ```
 demonstrate/
-  ├── backend/
-  │   ├── main.py              # FastAPI 后端
-  │   └── requirements.txt     # 依赖
+  ├── backend/                      # 后端（已模块化）
+  │   ├── __init__.py
+  │   ├── main.py                   # FastAPI 路由与会话
+  │   ├── requirements.txt          # 依赖
+  │   ├── constants.py              # 路径与文件常量（集中管理）
+  │   ├── schemas.py                # Pydantic 数据模型
+  │   └── services/                 # 业务逻辑模块
+  │       ├── storage.py            # 上传文件保存
+  │       ├── risk.py               # 风险评分
+  │       ├── similar.py            # 相似病例频率展示
+  │       ├── model_runner.py       # 模型调用与转换脚本执行
+  │       └── recommendation.py     # 解析模型输出并生成推荐项
   └── frontend/
-      ├── index.html           # 前端入口
-      ├── style.css            # 样式
-      └── app.js               # 前端逻辑
+      ├── index.html                # 前端入口
+      ├── style.css                 # 样式
+      └── app.js                    # 前端逻辑
 ```
 # 后端和前端都需要启动
 ## 后端启动
@@ -28,7 +37,7 @@ source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r demonstrate/backend/requirements.txt
 ```
 
-3) 启动服务：
+3) 启动服务（推荐以包形式运行）：
 ```
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
@@ -45,6 +54,14 @@ python -m http.server 5173
 方式B：直接双击打开 index.html（可能会有跨域限制，可用方式A避免）
 
 前端默认请求后端地址为 http://localhost:8000（见 frontend/app.js 中 API_BASE）。如需修改端口或部署到其他机器，请调整该常量。
+
+## 路径与常量集中管理
+- 后端所有模型脚本、权重文件与输出路径已集中在 `backend/constants.py`，后续如需调整路径或文件名，只需修改该文件即可。
+- 关键常量示例：`PROJECT_ROOT`、`UPLOAD_DIR`、`MODEL_SCRIPT`、`CONVERT_SCRIPT`、`WEIGHTS_PATH`、`MODEL_OUT_JSON`、`MODEL_OUT_WITH_NAMES_JSON`。
+
+## 模型调用流程（概述）
+- 上传接口会提取 `patient_id`，并调用 `services/model_runner.py` 执行模型与转换脚本；随后由 `services/recommendation.py` 解析生成前 5 项推荐。
+- 会话与基础评分在 `main.py` 与 `services/risk.py` 中维护，前端补充信息的影响由 `services/similar.py` 负责。
 
 ## 接口说明
 - POST /api/infer/upload

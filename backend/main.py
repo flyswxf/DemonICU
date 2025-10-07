@@ -1,16 +1,18 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import json
 import uuid
-import random
-from typing import List, Dict, Any, Optional
 import subprocess
-import sys
-from pathlib import Path
-import os
+from typing import Dict, Any
 
-app = FastAPI(title="GraphCare Demo Backend", version="1.1.0")
+# Import modularized services and schemas
+from backend.schemas import MeasureItem, SimilarCaseItem, InferResponse, AugmentRequest
+from backend.services.risk import compute_base_probability
+from backend.services.similar import analyze_text_adjustment, make_similar_cases
+from backend.services.storage import save_patient
+from backend.services.recommendation import recommend_from_model
+
+app = FastAPI(title="GraphCare Demo Backend", version="1.2.0")
 
 # CORS: allow all origins for demo purposes
 app.add_middleware(
@@ -23,181 +25,42 @@ app.add_middleware(
 
 # In-memory session store
 SESSIONS: Dict[str, Dict[str, Any]] = {}
-ROOT_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_DIR = ROOT_DIR / "uploads"
-MODEL_OUT_JSON = ROOT_DIR / "ehr_baselines" / "SparseTest" / "result" / "inference_result.json"
-MODEL_OUT_WITH_NAMES_JSON = ROOT_DIR / "ehr_baselines" / "SparseTest" / "result" / "inference_result_with_names.json"
 
 
-class MeasureItem(BaseModel):
-    measure: str
-    reason: Optional[str] = None
+"""
+Schemas moved to backend/schemas.py
+"""
 
 
-class SimilarCaseItem(BaseModel):
-    measure: str
-    frequency: float  # 0.0 - 1.0
+"""
+File save helpers moved to backend/services/storage.py
+"""
 
 
-class InferResponse(BaseModel):
-    session_id: str
-    probability: float
-    recommended: List[MeasureItem]
-    similar_cases: List[SimilarCaseItem]
+"""
+Model run & conversion moved to backend/services/model_runner.py and recommendation.py
+"""
 
 
-class AugmentRequest(BaseModel):
-    session_id: str
-    text: str
+"""
+Recommendation parsing moved to backend/services/recommendation.py
+"""
 
 
-def _ensure_dirs():
-    try:
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        pass
+"""
+Utility helpers removed (unused in current flow)
+"""
 
 
-def _save_patient(session_id: str, raw_json: bytes) -> Path:
-    _ensure_dirs()
-    path = UPLOAD_DIR / f"{session_id}.json"
-    with open(path, "wb") as f:
-        f.write(raw_json)
-    return path
+"""
+Risk scoring moved to backend/services/risk.py
+"""
 
 
-def _run_external_model(patient_id: str) -> None:
-    cmd = [
-        sys.executable,
-        "-u",
-        str(ROOT_DIR / "ehr_baselines" / "SparseTest" / "runSparseModel.py"),
-        "--dataset",
-        "mimic3",
-        "--task",
-        "drugrec",
-        "--infer",
-        "--weights_path",
-        str(ROOT_DIR / "data" / "weights" / "saved_weights_mimic3_drugrec_sparse.pkl"),
-        "--out",
-        str(MODEL_OUT_JSON),
-        "--patient_id",
-        str(patient_id),
-    ]
-    subprocess.run(cmd, cwd=str(ROOT_DIR), check=True)
-
-    # 先尝试带参数的转换调用（你会在脚本中支持 --input/--output）；不支持参数时降级为无参调用（脚本内部使用默认路径）
-    try:
-        convert_cmd = [
-            sys.executable,
-            str(ROOT_DIR / "ehr_baselines" / "SparseTest" / "utils" / "convert_indices_to_code.py"),
-            "--input",
-            str(MODEL_OUT_JSON),
-            "--output",
-            str(MODEL_OUT_WITH_NAMES_JSON),
-        ]
-        subprocess.run(convert_cmd, cwd=str(ROOT_DIR), check=True)
-    except subprocess.CalledProcessError:
-        fallback_cmd = [
-            sys.executable,
-            str(ROOT_DIR / "ehr_baselines" / "SparseTest" / "utils" / "convert_indices_to_code.py"),
-        ]
-        subprocess.run(fallback_cmd, cwd=str(ROOT_DIR), check=True)
-
-
-def _parse_model_recommendations(max_items: int = 5) -> List[str]:
-    if not MODEL_OUT_WITH_NAMES_JSON.exists():
-        raise RuntimeError("模型输出未生成")
-    with open(MODEL_OUT_WITH_NAMES_JSON, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    names = []
-    if isinstance(data, dict):
-        if "topk_names" in data and isinstance(data["topk_names"], list):
-            names = data["topk_names"]
-        elif "recommendations" in data and isinstance(data["recommendations"], list):
-            for it in data["recommendations"]:
-                n = it.get("drug_name") or it.get("name")
-                if n:
-                    names.append(n)
-    names = names[:max_items] if max_items and isinstance(names, list) else names
-    return [str(n) for n in names]
-
-
-def _safe_get(d: Dict[str, Any], *keys, default=None):
-    cur = d
-    for k in keys:
-        if isinstance(cur, dict) and k in cur:
-            cur = cur[k]
-        else:
-            return default
-    return cur
-
-
-def compute_base_probability(patient: Dict[str, Any]) -> float:
-    # Heuristic demo scoring (not a medical device)
-    score = 0.25
-    vitals = patient.get("vitals", {}) or {}
-    labs = patient.get("labs", {}) or {}
-    history = patient.get("history", {}) or {}
-
-    map_val = vitals.get("MAP")  # mean arterial pressure
-    ci = vitals.get("CI")  # cardiac index
-    pawp = vitals.get("PAWP")  # pulmonary artery wedge pressure
-    hr = vitals.get("HR")
-    lact = labs.get("lactate")
-    ef = labs.get("EF")  # ejection fraction
-    urine = labs.get("urine_output_6h") or labs.get("urine_output_24h")
-
-    if map_val is not None and map_val < 65:
-        score += 0.18
-    if ci is not None and ci < 2.2:
-        score += 0.17
-    if pawp is not None and pawp > 18:
-        score += 0.10
-    if hr is not None and hr > 110:
-        score += 0.05
-    if lact is not None and lact >= 2:
-        score += 0.12
-    if ef is not None and ef < 35:
-        score += 0.12
-    if urine is not None:
-        try:
-            if urine < 0.5:  # ml/kg/h rough proxy
-                score += 0.08
-        except Exception:
-            pass
-
-    # history markers
-    if (history.get("AMI_recent") or history.get("STEMI") or history.get("MI")):
-        score += 0.08
-
-    return max(0.01, min(0.98, score))
-
-
-def analyze_text_adjustment(text: str) -> float:
-    if not text:
-        return 0.0
-    t = text.lower()
-    inc_keywords = [
-        "低血压", "血压下降", "心率过快", "尿量减少", "少尿", "乳酸", "皮肤冰冷", "四肢冰冷", "皮肤湿冷",
-        "st段抬高", "心肌梗死", "mi", "左室功能不全", "ef降低", "灌注不足", "意识模糊",
-    ]
-    dec_keywords = [
-        "好转", "稳定", "无胸痛", "症状缓解", "灌注改善", "意识清醒", "血压稳定",
-    ]
-    delta = 0.0
-    for kw in inc_keywords:
-        if kw in t:
-            delta += 0.04
-    for kw in dec_keywords:
-        if kw in t:
-            delta -= 0.03
-    return max(-0.25, min(0.25, delta))
-
-
-def make_recommendations_from_model(patient_id: str) -> List[MeasureItem]:
-    _run_external_model(patient_id)
-    names = _parse_model_recommendations(max_items=5)
-    return [MeasureItem(measure=n, reason="—") for n in names]
+"""
+Text adjustment and similar-cases moved to backend/services/similar.py
+Recommendation orchestration moved to backend/services/recommendation.py
+"""
 
 
 def _extract_patient_id(payload: Dict[str, Any]) -> str:
@@ -206,22 +69,6 @@ def _extract_patient_id(payload: Dict[str, Any]) -> str:
         raise HTTPException(status_code=400, detail="缺少必填字段 patient_id")
     return str(pid)
 
-
-def make_similar_cases(prob: float, seed: str) -> List[SimilarCaseItem]:
-    rng = random.Random(seed)
-    base = prob
-    items = [
-        ("去甲肾上腺素滴定", max(0.15, min(0.95, base + rng.uniform(-0.1, 0.1)))),
-        ("正性肌力（多巴酚丁胺/米力农）", max(0.05, min(0.85, base - 0.1 + rng.uniform(-0.1, 0.1)))),
-        ("IABP 评估/使用", max(0.05, min(0.7, base - 0.2 + rng.uniform(-0.1, 0.1)))),
-        ("VA-ECMO 转诊/启动", max(0.02, min(0.5, base - 0.3 + rng.uniform(-0.1, 0.1)))),
-    ]
-    # Normalize to look like proportions used among相似病例
-    total = sum(x[1] for x in items)
-    if total <= 0:
-        total = 1.0
-    items = [(name, val / total) for name, val in items]
-    return [SimilarCaseItem(measure=name, frequency=round(val, 3)) for name, val in items]
 
 
 @app.post("/api/infer/upload", response_model=InferResponse)
@@ -240,8 +87,9 @@ async def infer_from_upload(file: UploadFile = File(...)):
 
     prob = base_prob
     try:
-        dataset_path = _save_patient(session_id, raw)
-        recs = make_recommendations_from_model(patient_id)
+        dataset_path = save_patient(session_id, raw)
+        names = recommend_from_model(patient_id)
+        recs = [MeasureItem(measure=n, reason="—") for n in names]
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"模型运行失败: {e}")
     except Exception as e:
@@ -273,7 +121,8 @@ async def augment_with_text(body: AugmentRequest):
     try:
         pid = session.get("patient_id")
         if pid:
-            recs = make_recommendations_from_model(str(pid))
+            names = recommend_from_model(str(pid))
+            recs = [MeasureItem(measure=n, reason="—") for n in names]
         else:
             raise RuntimeError("缺少 patient_id，无法重新运行模型")
     except subprocess.CalledProcessError as e:
