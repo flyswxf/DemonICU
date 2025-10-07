@@ -9,8 +9,8 @@ from typing import Dict, Any
 from backend.schemas import MeasureItem, SimilarCaseItem, InferResponse, AugmentRequest
 from backend.services.risk import compute_base_probability
 from backend.services.similar import analyze_text_adjustment, make_similar_cases
-from backend.services.storage import save_patient
-from backend.services.recommendation import recommend_from_model
+from backend.services.storage import save_patient, save_feedback_text
+from backend.services.recommendation import recommend_from_model, recommend_with_feedback
 
 app = FastAPI(title="GraphCare Demo Backend", version="1.2.0")
 
@@ -112,6 +112,11 @@ async def augment_with_text(body: AugmentRequest):
     if not session:
         raise HTTPException(status_code=404, detail="session_id不存在或已过期")
     session["notes"].append(body.text)
+    # Persist feedback text for downstream keyword & cluster mapping
+    try:
+        save_feedback_text(body.text)
+    except Exception:
+        pass
 
     base_prob = compute_base_probability(session["patient"])  # base from patient
     delta = sum(analyze_text_adjustment(t) for t in session["notes"])  # cumulative text impact
@@ -121,7 +126,7 @@ async def augment_with_text(body: AugmentRequest):
     try:
         pid = session.get("patient_id")
         if pid:
-            names = recommend_from_model(str(pid))
+            names = recommend_with_feedback(str(pid))
             recs = [MeasureItem(measure=n, reason="—") for n in names]
         else:
             raise RuntimeError("缺少 patient_id，无法重新运行模型")

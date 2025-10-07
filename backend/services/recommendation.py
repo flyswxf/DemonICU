@@ -1,7 +1,12 @@
 import json
 from typing import List
 from .. import constants as C
-from .model_runner import run_external_model, run_convert_with_fallback
+from .model_runner import (
+    run_external_model,
+    run_convert_with_fallback,
+    run_keyword_extractor,
+    run_cluster_mapper,
+)
 
 
 def parse_model_recommendations(max_items: int = 5) -> List[str]:
@@ -23,5 +28,17 @@ def parse_model_recommendations(max_items: int = 5) -> List[str]:
 
 def recommend_from_model(patient_id: str) -> List[str]:
     run_external_model(patient_id)
+    run_convert_with_fallback()
+    return parse_model_recommendations(max_items=5)
+
+
+def recommend_with_feedback(patient_id: str) -> List[str]:
+    """Run feedback pipeline then model and return top names."""
+    # Execute feedback preprocessing
+    run_keyword_extractor()
+    run_cluster_mapper()
+    # Run model with feedback flag
+    run_external_model(patient_id, with_feedback=True)
+    # Convert indices to names
     run_convert_with_fallback()
     return parse_model_recommendations(max_items=5)
