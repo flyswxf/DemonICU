@@ -112,11 +112,12 @@ async def augment_with_text(body: AugmentRequest):
     if not session:
         raise HTTPException(status_code=404, detail="session_id不存在或已过期")
     session["notes"].append(body.text)
-    # Persist feedback text for downstream keyword & cluster mapping
+    
+    # IMPORTANT: First save feedback text to response.txt before any processing
     try:
         save_feedback_text(body.text)
-    except Exception:
-        pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"保存反馈文本失败: {e}")
 
     base_prob = compute_base_probability(session["patient"])  # base from patient
     delta = sum(analyze_text_adjustment(t) for t in session["notes"])  # cumulative text impact

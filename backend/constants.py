@@ -4,8 +4,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # 这个需要直接设置成服务器中的绝对路径！！！！！！！！
-EHR_BASELINES_DIR = PROJECT_ROOT / "ehr_baselines" / "SparseTest"
-WEIGHTS_PATH = PROJECT_ROOT / "data" / "weights" / "saved_weights_mimic3_drugrec_sparse.pkl"
+EHR_BASELINES_DIR = Path("/r/root/workspace/GraphCare/ehr_baselines/SparseTest")
+WEIGHTS_PATH = Path("/r/root/workspace/GraphCare/data/weights/saved_weights_mimic3_drugrec_sparse.pkl")
 
 
 BACKEND_DIR = PROJECT_ROOT / "backend"
