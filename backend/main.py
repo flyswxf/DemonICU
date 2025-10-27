@@ -7,7 +7,7 @@ from typing import Dict, Any
 
 # Import modularized services and schemas
 from backend.schemas import MeasureItem, SimilarCaseItem, InferResponse, AugmentRequest
-from backend.services.risk import compute_base_probability
+from backend.services.risk import compute_base_probability, read_model_probability
 from backend.services.similar import analyze_text_adjustment, make_similar_cases
 from backend.services.storage import save_patient, save_feedback_text
 from backend.services.recommendation import recommend_from_model, recommend_with_feedback
@@ -89,6 +89,10 @@ async def infer_from_upload(file: UploadFile = File(...)):
     try:
         dataset_path = save_patient(session_id, raw)
         names = recommend_from_model(patient_id)
+        # Prefer model output probability if available
+        model_prob = read_model_probability()
+        if model_prob is not None:
+            prob = model_prob
         recs = [MeasureItem(measure=n, reason="—") for n in names]
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"模型运行失败: {e}")
@@ -128,6 +132,11 @@ async def augment_with_text(body: AugmentRequest):
         pid = session.get("patient_id")
         if pid:
             names = recommend_with_feedback(str(pid))
+            # Prefer model output probability if available after feedback run
+            model_prob = read_model_probability()
+            if model_prob is not None:
+                prob = model_prob
+                session["prob"] = prob
             recs = [MeasureItem(measure=n, reason="—") for n in names]
         else:
             raise RuntimeError("缺少 patient_id，无法重新运行模型")

@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from .. import constants as C
 
 
 def compute_base_probability(patient: Dict[str, Any]) -> float:
@@ -40,3 +41,37 @@ def compute_base_probability(patient: Dict[str, Any]) -> float:
         score += 0.08
 
     return max(0.01, min(0.98, score))
+
+
+def read_model_probability() -> Optional[float]:
+    """Read cardiogenic_shock probability from MODEL_OUT_JSON if available.
+
+    Expected structure examples:
+    - { "cardiogenic_shock": 0.37 }
+    - { "probabilities": { "cardiogenic_shock": 0.37 } }
+    - { "risk": { "cardiogenic_shock": 0.37 } }
+
+    Returns None if file missing or key not found.
+    """
+    try:
+        if not C.MODEL_OUT_JSON.exists():
+            return None
+        import json
+        with open(C.MODEL_OUT_JSON, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            # direct key
+            val = data.get("cardiogenic_shock")
+            if isinstance(val, (int, float)):
+                return max(0.0, min(1.0, float(val)))
+            # nested mappings
+            # 这后面的应该不需要
+            for k in ("probabilities", "risk", "scores"):
+                m = data.get(k)
+                if isinstance(m, dict):
+                    v = m.get("cardiogenic_shock")
+                    if isinstance(v, (int, float)):
+                        return max(0.0, min(1.0, float(v)))
+    except Exception:
+        return None
+    return None
