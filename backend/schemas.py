@@ -7,16 +7,10 @@ class MeasureItem(BaseModel):
     reason: Optional[str] = None
 
 
-class SimilarCaseItem(BaseModel):
-    measure: str
-    frequency: float  # 0.0 - 1.0
-
-
 class InferResponse(BaseModel):
     session_id: str
     probability: float
     recommended: List[MeasureItem]
-    similar_cases: List[SimilarCaseItem]
 
 
 class AugmentRequest(BaseModel):

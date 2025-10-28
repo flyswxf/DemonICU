@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    { "id": "A", "name": "血流动力学评估", "importance": 5 },
+    { "id": "B", "name": "去甲肾上腺素", "importance": 4 },
+    { "id": "C", "name": "正性肌力支持", "importance": 3 },
+    { "id": "D", "name": "IABP 评估", "importance": 2 },
+    { "id": "E", "name": "VA-ECMO 转诊", "importance": 1 }
+  ],
+  "edges": [
+    ["A", "B"],
+    ["A", "C"],
+    ["B", "D"],
+    ["C", "D"],
+    ["D", "E"]
+  ]
+}

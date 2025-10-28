@@ -75,3 +75,25 @@ def read_model_probability() -> Optional[float]:
     except Exception:
         return None
     return None
+
+
+# 从原 similar 模块迁移：根据补充文本调整概率的辅助函数
+def analyze_text_adjustment(text: str) -> float:
+    if not text:
+        return 0.0
+    t = text.lower()
+    inc_keywords = [
+        "低血压", "血压下降", "心率过快", "尿量减少", "少尿", "乳酸", "皮肤冰冷", "四肢冰冷", "皮肤湿冷",
+        "st段抬高", "心肌梗死", "mi", "左室功能不全", "ef降低", "灌注不足", "意识模糊",
+    ]
+    dec_keywords = [
+        "好转", "稳定", "无胸痛", "症状缓解", "灌注改善", "意识清醒", "血压稳定",
+    ]
+    delta = 0.0
+    for kw in inc_keywords:
+        if kw in t:
+            delta += 0.04
+    for kw in dec_keywords:
+        if kw in t:
+            delta -= 0.03
+    return max(-0.25, min(0.25, delta))

@@ -2,25 +2,19 @@ import subprocess
 import sys
 from .. import constants as C
 
-# GraphCare conda environment name
-GRAPHCARE_ENV = "graphcare"
-# GraphCare项目根目录
-GRAPHCARE_PROJECT_ROOT = "/r/root/workspace/GraphCare"
-
-
 def _run_in_conda_env(command, cwd=None, **kwargs):
     """
     在指定的conda环境中运行命令
     """
     # 构建conda激活命令列表
     if isinstance(command, list):
-        conda_command = ["conda", "run", "-n", GRAPHCARE_ENV] + command
+        conda_command = ["conda", "run", "-n", C.GRAPHCARE_ENV] + command
     else:
-        conda_command = ["conda", "run", "-n", GRAPHCARE_ENV] + command.split()
+        conda_command = ["conda", "run", "-n", C.GRAPHCARE_ENV] + command.split()
     
     # 设置默认工作目录为GraphCare项目根目录
     if cwd is None:
-        cwd = GRAPHCARE_PROJECT_ROOT
+        cwd = C.GRAPHCARE_PROJECT_ROOT
     
     return subprocess.run(
         conda_command,

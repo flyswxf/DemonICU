@@ -4,13 +4,14 @@ import json
 import uuid
 import subprocess
 from typing import Dict, Any
+from fastapi import Response
 
 # Import modularized services and schemas
-from backend.schemas import MeasureItem, SimilarCaseItem, InferResponse, AugmentRequest
-from backend.services.risk import compute_base_probability, read_model_probability
-from backend.services.similar import analyze_text_adjustment, make_similar_cases
+from backend.schemas import MeasureItem, InferResponse, AugmentRequest
+from backend.services.risk import compute_base_probability, read_model_probability, analyze_text_adjustment
 from backend.services.storage import save_patient, save_feedback_text
 from backend.services.recommendation import recommend_from_model, recommend_with_feedback
+from backend.services.graph_image import generate_graph_image
 
 app = FastAPI(title="GraphCare Demo Backend", version="1.2.0")
 
@@ -58,7 +59,7 @@ Risk scoring moved to backend/services/risk.py
 
 
 """
-Text adjustment and similar-cases moved to backend/services/similar.py
+Text adjustment moved to backend/services/risk.py
 Recommendation orchestration moved to backend/services/recommendation.py
 """
 
@@ -98,15 +99,13 @@ async def infer_from_upload(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"模型运行失败: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"模型处理失败: {e}")
-    sims = make_similar_cases(prob, seed=session_id)
-
     SESSIONS[session_id] = {"patient": payload, "notes": [], "prob": prob, "dataset_path": str(dataset_path), "patient_id": patient_id}
 
     return InferResponse(
         session_id=session_id,
         probability=round(prob, 3),
         recommended=recs,
-        similar_cases=sims,
+        # 前端改为单独请求图像，不再返回 similar_cases
     )
 
 
@@ -144,14 +143,20 @@ async def augment_with_text(body: AugmentRequest):
         raise HTTPException(status_code=500, detail=f"模型运行失败: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"模型处理失败: {e}")
-    sims = make_similar_cases(prob, seed=body.session_id)
-
     return InferResponse(
         session_id=body.session_id,
         probability=round(prob, 3),
         recommended=recs,
-        similar_cases=sims,
     )
+
+
+@app.get("/api/graph/image")
+async def graph_image():
+    try:
+        buf = generate_graph_image()
+        return Response(content=buf.getvalue(), media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"图像生成失败: {e}")
 
 
 @app.get("/api/health")

@@ -13,7 +13,7 @@ const backBtn = $('#back-btn');
 const gauge = $('#gauge');
 const probValue = $('#prob-value');
 const recommendList = $('#recommend-list');
-const similarBars = $('#similar-bars');
+const graphImage = $('#graph-image');
 const augmentText = $('#augment-text');
 const augmentBtn = $('#augment-btn');
 const loadingOverlay = $('#loading-overlay');
@@ -44,22 +44,16 @@ function renderRecommendations(items) {
   });
 }
 
-function renderSimilarBars(items) {
-  similarBars.innerHTML = '';
-  (items || []).forEach((it) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'bar';
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = it.measure;
-    const track = document.createElement('div'); track.className = 'track';
-    const fill = document.createElement('div'); fill.className = 'fill';
-    track.appendChild(fill);
-    wrap.appendChild(name); wrap.appendChild(track);
-    similarBars.appendChild(wrap);
-    // animate width
-    setTimeout(() => { fill.style.width = `${Math.round(it.frequency * 100)}%`; }, 50);
-  });
+async function loadGraphImage() {
+  try {
+    const res = await fetch(`${API_BASE}/api/graph/image`);
+    if (!res.ok) throw new Error(`后端错误：${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (graphImage) graphImage.src = url;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function toggleSections(showResult) {
@@ -132,7 +126,7 @@ function init() {
       sessionId = data.session_id;
       setGauge(data.probability);
       renderRecommendations(data.recommended);
-      renderSimilarBars(data.similar_cases);
+      await loadGraphImage();
       toggleSections(true);
     } catch (err) {
       alert(err.message || '推理失败');
@@ -151,7 +145,7 @@ function init() {
       const data = await augment(text);
       setGauge(data.probability);
       renderRecommendations(data.recommended);
-      renderSimilarBars(data.similar_cases);
+      await loadGraphImage();
       augmentText.value = '';
     } catch (err) {
       alert(err.message || '更新失败');
@@ -164,7 +158,7 @@ function init() {
   backBtn.addEventListener('click', () => {
     // reset state
     selectedFile = null; sessionId = null; fileName.textContent = '未选择文件'; uploadBtn.disabled = true;
-    recommendList.innerHTML = ''; similarBars.innerHTML = ''; setGauge(0);
+    recommendList.innerHTML = ''; if (graphImage) { graphImage.src = ''; } setGauge(0);
     toggleSections(false);
   });
 
